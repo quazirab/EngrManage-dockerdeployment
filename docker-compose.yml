@@ -1,0 +1,55 @@
+version: "2.0"
+
+services:
+  # Server Proxy
+  nginx:
+    container_name: nginx
+    image: nginx:latest
+    restart: always
+    volumes:
+      - ./Nginx:/etc/nginx
+    ports:
+      - '80:80'
+    networks:
+      web-server:
+        ipv4_address: 172.18.0.2
+  
+  # Server Monitoring
+  netdata:
+    container_name: netdata
+    image: netdata/netdata
+    expose:
+      - '19999'
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - apparmor:unconfined
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      web-server:
+        ipv4_address: 172.18.0.3
+
+  # Database
+  db-1:
+    container_name: db_1
+    image: postgres:alpine
+    environment:
+      POSTGRES_PASSWORD: postgres
+    expose:
+      - '5432'
+    networks:
+      web-server:
+        ipv4_address: 172.18.0.10
+
+
+networks: 
+  web-server:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+      - subnet: 172.18.0.0/16
+        gateway: 172.18.0.1
